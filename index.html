@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 提示词 - 完美布局版</title>
+    <title>AI 提示词管理器 - 联网同步版</title>
     <style>
-        /* --- 1. 基础样式 --- */
+        /* --- 1. 基础样式 (保持不变) --- */
         :root {
             --primary-blue: #4A90E2;
             --primary-green: #50E3C2;
@@ -58,6 +58,8 @@
         }
         .btn-export { background-color: var(--purple-share); }
         .btn-import { background-color: #34495e; position: relative; overflow: hidden; }
+        /* 新增：手动拉取按钮 */
+        .btn-sync { background-color: #e67e22; } 
         
         #fileInput {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -72,7 +74,7 @@
             align-items: flex-start;
         }
 
-        /* --- 通用面板 --- */
+        /* --- 面板样式 --- */
         .panel {
             background-color: var(--card-bg);
             border-radius: 12px;
@@ -82,23 +84,17 @@
             display: flex;
             flex-direction: column;
             min-height: 600px;
-            /* 关键修复：防止 Flex 子元素被内容撑开宽度 */
-            min-width: 0; 
+            min-width: 0;
         }
 
         .panel-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid #f0f0f0;
-            padding-bottom: 15px;
-            margin-bottom: 20px;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 2px solid #f0f0f0; padding-bottom: 15px; margin-bottom: 20px;
         }
         .panel-header h3 { margin: 0; font-size: 1.2em; color: #555; }
-        
         .btn-clear { background: #f1f1f1; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; color: #666; font-size: 12px;}
 
-        /* --- 输入框样式 --- */
+        /* --- 输入框 --- */
         .filter-row { display: flex; gap: 15px; margin-bottom: 15px; }
         .input-wrapper { flex: 1; }
         label { display: block; margin-bottom: 6px; font-weight: bold; font-size: 0.9em; color: #555; }
@@ -110,15 +106,12 @@
         input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary-blue); }
 
         .main-textarea {
-            flex: 1; width: 100%; padding: 15px;
-            border: 2px solid #333; border-radius: 8px;
-            font-size: 15px; line-height: 1.6; resize: none;
-            box-sizing: border-box; margin-bottom: 20px;
-            font-family: inherit; background-color: #fafafa;
+            flex: 1; width: 100%; padding: 15px; border: 2px solid #333; border-radius: 8px;
+            font-size: 15px; line-height: 1.6; resize: none; box-sizing: border-box;
+            margin-bottom: 20px; font-family: inherit; background-color: #fafafa;
         }
 
         .action-buttons { display: flex; gap: 15px; margin-top: auto; }
-        
         .btn-big {
             flex: 1; padding: 12px; border: none; border-radius: 6px;
             color: white; font-weight: bold; font-size: 16px; cursor: pointer;
@@ -128,15 +121,12 @@
         .btn-copy { background-color: var(--primary-blue); }
         .btn-save { background-color: var(--primary-green); color: #004d40; }
 
-        /* --- 列表样式 (关键修复区) --- */
+        /* --- 列表样式 --- */
         .storage-list { flex: 1; overflow-y: auto; padding-right: 5px; }
 
         .card {
             background: #fff; border: 1px solid #eee; border-left: 5px solid var(--primary-blue);
-            border-radius: 8px; padding: 15px; margin-bottom: 15px; position: relative;
-            /* 确保卡片本身宽度受控 */
-            width: 100%;
-            box-sizing: border-box;
+            border-radius: 8px; padding: 15px; margin-bottom: 15px; position: relative; width: 100%; box-sizing: border-box;
         }
         .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
 
@@ -144,23 +134,10 @@
         .card-title { font-weight: bold; font-size: 1.1em; }
         .card-tag { background: #e3f2fd; color: #1976d2; padding: 2px 10px; border-radius: 20px; font-size: 0.8em; font-weight: bold; white-space: nowrap; }
         
-        /* 🔥 核心修复：预览文字强制换行并限制行数 */
         .card-preview { 
-            color: #666; 
-            font-size: 0.9em; 
-            margin-bottom: 12px; 
-            
-            /* 强制单词换行，防止长字符串撑开宽度 */
-            word-break: break-all; 
-            word-wrap: break-word;
-            white-space: pre-wrap;
-
-            /* 限制最多显示 3 行 */
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            
+            color: #666; font-size: 0.9em; margin-bottom: 12px; 
+            word-break: break-all; word-wrap: break-word; white-space: pre-wrap;
+            display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
             line-height: 1.5;
         }
         
@@ -179,6 +156,7 @@
     <div class="top-bar">
         <h1 class="app-title">🚀 AI 提示词管理器</h1>
         <div class="data-controls">
+            <button class="btn-data btn-sync" onclick="forceFetchGithub()">↻ 重新加载数据</button>
             <button class="btn-data btn-export" onclick="exportData()">📤 导出备份</button>
             <button class="btn-data btn-import">
                 📥 导入数据
@@ -248,10 +226,14 @@
 </div>
 
 <script>
-    // --- 变量声明 ---
+    // --- 核心配置 ---
     const DB_KEY = 'my_prompts_db_v5'; 
+    // 这是你上传到 Github 的文件路径
+    const GITHUB_DATA_URL = './data/prompts.json'; 
+
     let currentEditingId = null; 
 
+    // DOM 元素获取
     const inputName = document.getElementById('inputName');
     const inputType = document.getElementById('inputType');
     const mainEditor = document.getElementById('mainEditor');
@@ -262,7 +244,65 @@
     const storageList = document.getElementById('storageList');
     const countLabel = document.getElementById('countLabel');
 
-    // --- 导出导入 ---
+    // ==========================================
+    // 🔥 核心新增功能：自动从 GitHub 加载数据
+    // ==========================================
+    
+    // 页面加载时执行
+    window.onload = function() {
+        initData();
+    };
+
+    async function initData() {
+        const localData = getSavedData();
+        
+        // 如果本地没有数据，尝试从 GitHub 抓取
+        if (localData.length === 0) {
+            console.log("本地数据为空，正在从 GitHub 加载...");
+            await fetchAndSaveData();
+        } else {
+            console.log("检测到本地已有数据，跳过自动加载。");
+            renderList();
+        }
+    }
+
+    // 强制重新加载（绑定到橙色按钮）
+    async function forceFetchGithub() {
+        if(confirm("确定要重新加载服务器数据吗？\n注意：这将覆盖现有的所有数据！建议先【导出备份】。")) {
+            await fetchAndSaveData();
+        }
+    }
+
+    // 执行抓取逻辑
+    async function fetchAndSaveData() {
+        try {
+            // 这里请求的是你仓库里的 data/prompts.json
+            const response = await fetch(GITHUB_DATA_URL);
+            
+            if (!response.ok) {
+                throw new Error("找不到数据文件，请检查 data/prompts.json 是否上传正确");
+            }
+
+            const serverData = await response.json();
+            
+            // 存入本地并刷新
+            localStorage.setItem(DB_KEY, JSON.stringify(serverData));
+            renderList();
+            alert("✅ 成功加载 " + serverData.length + " 条数据！");
+            
+        } catch (error) {
+            console.error("加载失败:", error);
+            // 如果是本地打开文件而不是通过 http 访问，fetch 会失败，这是正常的
+            if(window.location.protocol === 'file:') {
+                alert("提示：请在 GitHub Pages 网址中查看，本地直接打开文件无法读取 JSON。");
+            }
+        }
+    }
+
+    // ==========================================
+    // 以下是原有的基础逻辑 (保持不变)
+    // ==========================================
+
     function exportData() {
         const data = localStorage.getItem(DB_KEY);
         if (!data || JSON.parse(data).length === 0) {
@@ -273,7 +313,7 @@
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = "我的AI提示词备份.json";
+        a.download = "提示词备份_" + new Date().toISOString().slice(0,10) + ".json";
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -303,7 +343,6 @@
         reader.readAsText(file);
     }
 
-    // --- 基础逻辑 ---
     function getSavedData() {
         const data = localStorage.getItem(DB_KEY);
         return data ? JSON.parse(data) : [];
@@ -423,7 +462,6 @@
 
     searchName.addEventListener('input', renderList);
     searchType.addEventListener('change', renderList);
-    renderList();
 </script>
 
 </body>
